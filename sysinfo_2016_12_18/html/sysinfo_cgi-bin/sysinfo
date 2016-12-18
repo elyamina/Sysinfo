@@ -1,0 +1,224 @@
+#!/bin/bash
+echo "Content-type: text/html"
+echo ''
+LOG_FILE=/var/www/stat/load_average.log
+LOG_ARCHIVE=/var/www/stat/load_average_archive.log
+IOSTAT_FILE=/var/www/stat/local_iostat.log
+IOSTAT_ARCHIVE=/var/www/stat/local_iostat_archive.log
+NET_FILE=/var/www/stat/local_netload.log
+NET_FILE_ARCHIVE=/var/www/stat/local_netload_archive.log
+TOP_TALKERS_FILE=/var/www/stat/top_proto.log
+TOP_TALKERS_ARCHIVE=/var/www/stat/top_proto_archive.log
+TOP_TALKERS_PACKETS=/var/www/stat/top_pack.log
+TOP_TALKERS_PACKETS_ARCHIVE=/var/www/stat/top_pack_archive.log
+TOP_TALKERS_BYTES=/var/www/stat/top_bytes.log
+TOP_TALKERS_BYTES_ARCHIVE=/var/www/stat/top_bytes_archive.log
+LISTENERS=/var/www/stat/listeners.log
+LISTENERS_ARCHIVE=/var/www/stat/listeners_archive.log
+TCP_STATE=/var/www/stat/tcp_state.log
+TCP_STATE_ARCHIVE=/var/www/stat/tcp_state_archive.log
+CPU_STAT=/var/www/stat/cpu_stat.log
+CPU_STAT_ARCHIVE=/var/www/stat/cpu_stat_archive.log
+DISK_STAT=/var/www/stat/disk_stat.log 
+DISK_STAT_ARCHIVE=/var/www/stat/disk_stat_archive.log 
+INODES_STAT=/var/www/stat/inodes_stat.log
+INODES_STAT_ARCHIVE=/var/www/stat/inodes_stat_archive.log
+
+echo $REMOTE_ADDR
+cat <<END
+<html>
+<head>
+<title>Current statistic</title>
+<meta http-equiv="Refresh" content="1">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<meta http-equiv="Cache-Control" content="no-cache">
+END
+date
+cat <<END
+</head>
+<body>
+<h2>Load Average:</h2>
+<table border="1">
+<tr><td>
+<table border="1">
+<tr><th>Load Average (1 мин)</th><th>Load Average (5 мин)</th><th>Load Average (15 мин)</th></tr>
+END
+
+echo "Текущая статистика"
+cat $LOG_FILE | awk -F " " '{if ($1!="Date:") print  "<tr><td><font color="$2">"$1"</font></td><td><font color="4">"$3"</font></td><td><font color="$6">"$5"</font></td></tr></table></td>";}'
+cat <<END
+<td><table border="1">
+<tr><th>Load Average (1 мин)</th><th>Load Average (5 мин)</th><th>Load Average (15 мин)</th></tr>
+END
+
+echo "1 мин. назад"
+cat $LOG_ARCHIVE | awk -F " " 'END {print "<tr><td><font color="$2">"$1"</font></td><td><font color="4">"$3"</font></td><td><font color="$6">"$5"</font></td></tr></table></td></tr></table>";}'
+cat <<END
+
+<h2 colspan=40>Загрузка дисков (IOSTAT):</h2>
+<table border="1">
+<tr><td>
+<table border="1">
+<tr><th colspan=40>Текущая загрузка дисков (IOSTAT)</th></tr>
+END
+cat $IOSTAT_FILE | awk -F " " '{for (i=0; i<15 && $i!=EOF; i++)if (i==0)print"<tr>";else if (i==14)print "</tr>"; else if($i=="Date:" || $i=="Linux")i+=6; else if($i=="avg-cpu:")print ("<td colspan=40>"$i"</td></tr>");else print "<td>"$i"</td>" } END{print "</tr></table></td>"}'
+cat <<END
+
+<td><table border="1">
+<tr><th colspan=40>Загрузка дисков за предыдущую минуту (IOSTAT)</th></tr>
+END
+cat $IOSTAT_ARCHIVE | awk -F " " '{for (i=0; i<15 && $i!=EOF; i++)if (i==0)print"<tr>";else if (i==14)print "</tr>"; else if($i=="Date:" || $i=="Linux")i+=6; else if($i=="avg-cpu:")print ("<td colspan=40>"$i"</td></tr>");else print "<td>"$i"</td>" } END{print "</tr></table></td></tr></table>"}'
+cat <<END
+
+<h2 colspan=40>Загрузка сети (Ethtool):</h2>
+<table border="1">
+<tr><td>
+<table border="1">
+<tr><th colspan=40>Текущая загрузка сети (ethtool)</th></tr>
+END
+cat $NET_FILE | awk -F " " '{for (i=0; i<3; i++) if($(i+1)=="lo") NR+=1; else if($i=="Net_statistics:") print("<tr><th colspan=3>"$(i+1)"</th><th>rx_packets:</th><th>tx_packets:</th><th>rx_bytes:</th><th>tx_bytes:</th></tr>"); else if ($i=="rx_packets:") print ("<td colspan=3></td><td>"$(i+1)"</td>"); else if ($i=="tx_packets:") print ("<td>"$(i+1)"</td>"); else if ($i=="rx_bytes:") print ("<td>"$(i+1)"</td>"); else if ($i=="tx_bytes:") print ("<td>"$(i+1)"</td>")} END{print "</tr></table></td>"}'
+cat <<END
+
+<td><table border="1">
+<tr><th colspan=40>Загрузка сети за предыдущую минуту (ethtool)</th></tr>
+END
+cat $NET_FILE_ARCHIVE | awk -F " " '{for (i=0; i<3; i++) if($(i+1)=="lo") NR+=1; else if($i=="Net_statistics:") print("<tr><th colspan=3>"$(i+1)"</th><th>rx_packets:</th><th>tx_packets:</th><th>rx_bytes:</th><th>tx_bytes:</th></tr>"); else if ($i=="rx_packets:") print ("<td colspan=3></td><td>"$(i+1)"</td>"); else if ($i=="tx_packets:") print ("<td>"$(i+1)"</td>"); else if ($i=="rx_bytes:") print ("<td>"$(i+1)"</td>"); else if ($i=="tx_bytes:") print ("<td>"$(i+1)"</td>")} END{print "</tr></table></td></tr></table>"}'
+cat <<END
+
+<h2 colspan=40>Top talkers (Tcpdump):</h2>
+<table border="1">
+<tr><td>
+<table border="1">
+<tr><th colspan=40>Current top talkers protocols (Tcpdump)</th></tr>
+<tr><th>Protocol</th><th>Packets</th><th>Bytes</th><th>% for 1 min</th></tr>
+END
+cat $TOP_TALKERS_FILE | awk -F " " '{print("<tr><td>"$1"</td><td>"$2"</td><td>"$4"</td><td>"$6"</td>")} END {print "</tr></table></td>"}'
+cat <<END
+
+<td><table border="1">
+<tr><th colspan=40>(1 min ago )Top talkers protocols (Tcpdump)</th></tr>
+<tr><th>Protocol</th><th>Packets</th><th>Bytes</th><th>% for 1 min</th></tr>
+END
+cat $TOP_TALKERS_ARCHIVE | awk -F " " '{print("<tr><td>"$1"</td><td>"$2"</td><td>"$4"</td><td>"$6"</td>")} END {print "</tr></table></td></tr></table>"}'
+cat <<END
+
+<table border="1">
+<tr><td>
+<table border="1">
+<tr><th colspan=40>Current top talkers: pack sort (Tcpdump)</th></tr>
+<tr><th colspan=20>src/dst ip</th><th>Protocol</th><th>src/port</th><th>pps</th></tr>
+END
+cat $TOP_TALKERS_PACKETS | awk -F " " '{if ($4!="ICMP")print("<tr><td colspan=20>"$2"/"$4"</td><td>"$5"</td><td>"$3"</td><td>"$1/60"</td></tr>"); else print("<tr><td colspan=20>"$2"/"$3"</td><td>"$4"</td><td>" "</td><td>"$1/60"</td></tr>")} END {print "</tr></table></td>"}'
+cat <<END
+
+<td><table border="1">
+<tr><th colspan=40>(1 min ago) top talkers: pack sort (Tcpdump)</th></tr>
+<tr><th colspan=20>src/dst ip</th><th>Protocol</th><th>src/port</th><th>pps</th></tr>
+END
+cat $TOP_TALKERS_PACKETS_ARCHIVE | awk -F " " '{if ($4!="ICMP")print("<tr><td colspan=20>"$2"/"$4"</td><td>"$5"</td><td>"$3"</td><td>"$1/60"</td></tr>"); else print("<tr><td colspan=20>"$2"/"$3"</td><td>"$4"</td><td>" "</td><td>"$1/60"</td></tr>")} END {print "</tr></table></td></tr></table>"}'
+cat <<END
+
+<table border="1">
+<tr><td>
+<table border="1">
+<tr><th colspan=40>Current top talkers: bytes sort (Tcpdump)</th></tr>
+<tr><th colspan=20>src/dst ip</th><th>Protocol</th><th>src/port</th><th>bps</th></tr>
+END
+cat $TOP_TALKERS_BYTES | awk -F " " '{if ($4!="ICMP")print("<tr><td colspan=20>"$1"/"$3"</td><td>"$4"</td><td>"$2"</td><td>"$5"</td></tr>"); else print("<tr><td colspan=20>"$1"/"$3"</td><td>"$4"</td><td>" "</td><td>"$5"</td></tr>")} END {print "</tr></table></td>"}'
+cat <<END
+
+<td><table border="1">
+<tr><th colspan=40>(1 min ago) top talkers: bytes sort (Tcpdump)</th></tr>
+<tr><th colspan=20>src/dst ip</th><th>Protocol</th><th>src/port</th><th>bps</th></tr>
+END
+cat $TOP_TALKERS_BYTES_ARCHIVE | awk -F " " '{if ($4!="ICMP")print("<tr><td colspan=20>"$1"/"$3"</td><td>"$4"</td><td>"$2"</td><td>"$5"</td></tr>"); else print("<tr><td colspan=20>"$1"/"$3"</td><td>"$4"</td><td>" "</td><td>"$5"</td></tr>")} END {print "</tr></table></td></tr></table>"}'
+cat <<END
+
+<h2>Статистика по сетевым соединениям:</h2>
+<table border="1">
+<tr><td>
+<table border="1">
+<tr><th colspan=40>Current listeners: (Netstat)</th></tr>
+<tr><th colspan=20>Protocol</th><th>Socket</th></tr>
+END
+cat $LISTENERS | awk -F " " '{print("<tr><td colspan=20>"$2"</td><td>"$3"</td></tr>")}END {print "</tr></table></td>"}'
+cat <<END
+
+<td><table border="1">
+<tr><th colspan=40>(1 min ago) listeners: (Netstat)</th></tr>
+<tr><th colspan=20>Protocol</th><th>Socket</th></tr>
+END
+cat $LISTENERS_ARCHIVE | awk -F " " '{print("<tr><td colspan=20>"$2"</td><td>"$3"</td></tr>")}END {print "</tr></table></td></tr></table>"}'
+cat <<END
+
+<table border="1">
+<tr><td>
+<table border="1">
+<tr><th colspan=40>Current TCP States: (Netstat)</th></tr>
+<tr><th colspan=20>TCP_STATE</th><th>Amount</th></tr>
+END
+cat $TCP_STATE | awk -F " " '{ if ($2!="")print("<tr><td colspan=20>"$2"</td><td>"$1"</td></tr>")} END {print "</tr></table></td>"}'
+cat <<END
+
+<td><table border="1">
+<tr><th colspan=40>(1 min ago) TCP States: (Netstat)</th></tr>
+<tr><th colspan=20>TCP_STATE</th><th>Amount</th></tr>
+END
+cat $TCP_STATE_ARCHIVE | awk -F " " '{if ($2!="") print("<tr><td colspan=20>"$2"</td><td>"$1"</td></tr>")} END {print "</tr></table></td></tr></table>"}'
+cat <<END
+
+
+<h2 colspan=40>Загрузка CPU (mpstat):</h2>
+<table border="1">
+<tr><td>
+<table border="1">
+<tr><th colspan=40>Current CPU statistics (mpstat)</th></tr>
+<tr><th>%user</th><th>%nice</th><th>%sys</th><th>%idle</th><th>%iowait</th></tr>
+END
+cat $CPU_STAT | awk -F " " '(NR<2){print("<tr><td><font color="$8">"$2"</font></td><td>"$3"</td><td>"$5"</td><td>"$6"</td><td>"$7"</td></tr>")} END {print "</tr></table></td>"}'
+cat <<END
+
+<td><table border="1">
+<tr><th colspan=40>Current CPU statistics (mpstat)</th></tr>
+<tr><th>%user</th><th>%nice</th><th>%sys</th><th>%idle</th><th>%iowait</th></tr>
+END
+cat $CPU_STAT_ARCHIVE | awk -F " " '(NR<2){print("<tr><td><font color="$8">"$2"</font></td><td>"$3"</td><td>"$5"</td><td>"$6"</td><td>"$7"</td></tr>")} END {print "</tr></table></td></tr></table>"}'
+cat <<END
+
+
+<h2 colspan=40>Информация о дисках (df):</h2>
+<table border="1">
+<tr><td>
+<table border="1">
+<tr><th colspan=40>Current disk statistics (df)</th></tr>
+<tr><th>Файл. система</th><th>Смонтировано в</th><th>%free space</th></tr>
+END
+
+cat $DISK_STAT | awk -F " " '{print("<tr><td>"$2"</td><td>"$1"</td><td>"$3"</td></tr>")} END {print "</tr></table></td>"}'
+cat <<END
+
+<td><table border="1">
+<tr><th colspan=40>(1 min ago) disk statistics (df)</th></tr>
+<tr><th>Файл. система</th><th>Смонтировано в</th><th>%free space</th></tr>
+END
+
+cat $DISK_STAT_ARCHIVE | awk -F " " '{print("<tr><td>"$2"</td><td>"$1"</td><td>"$3"</td></tr>")} END {print "</tr></table></td></tr>"}'
+cat <<END
+
+<table border="1">
+<tr><td>
+<table border="1">
+<tr><td>
+<tr><th colspan=40>Current disk inodes statistics (df)</th></tr>
+<tr><th>Файл. система</th><th>Смонтировано в</th><th>%free inodes</th></tr>
+END
+cat $INODES_STAT | awk -F " " '{print("<tr><td>"$2"</td><td>"$1"</td><td>"$3"</td></tr>")} END {print "</tr></table></td>"}'
+cat <<END
+
+<td><table border="1">
+<tr><td>
+<tr><th colspan=40>Current disk inodes statistics (df)</th></tr>
+<tr><th>Файл. система</th><th>Смонтировано в</th><th>%free inodes</th></tr>
+END
+cat $INODES_STAT | awk -F " " '{print("<tr><td>"$2"</td><td>"$1"</td><td>"$3"</td></tr>")} END {print "</tr></table></td></tr></table>"}'
+cat <<END
