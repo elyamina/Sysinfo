@@ -1,5 +1,7 @@
 #!/bin/bash
-
+PATH=/usr/sbin:$PATH
+sudo chmod a+x  $PWD/html/sysinfo_cgi-bin/* 
+sudo chmod 777 $PWD/*
 sudo apt-get install nginx
 sudo cp -f $PWD/nginx_conf/default.conf /etc/nginx/conf.d/
 sudo cp -f $PWD/nginx_conf/index.html  /usr/share/nginx/html/
